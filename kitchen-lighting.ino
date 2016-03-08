@@ -1,41 +1,80 @@
 const int BUTTON_PIN = 0;
 const int BUTTON_LED_PIN = 2;
 const int LED_PIN = 1;
+// Delay to ignore input between button state changes
+const int PRESS_DELAY = 20;
 
-bool leftPanelOutput = LOW;
-bool lastButtonState = LOW;
-
+bool panelOutput = LOW;
 int panelMode = 0;
-int buttonLedMode = 0;
 
-long leftLastChange;
+bool buttonState = LOW;
+bool lastButtonState = LOW;
+long lastStateChange;
+long deltaSinceLastChange;
+int buttonLedMode = 0;
+bool freshButtonPress = true;
 
 void setup() {
-  leftLastChange = millis();
-  // put your setup code here, to run once:
+  lastStateChange = millis();
+  
   pinMode(BUTTON_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
   
-  digitalWrite(LED_PIN  , leftPanelOutput);
+  buttonState = digitalRead(BUTTON_PIN);
+  lastButtonState = buttonState;
+
+  digitalWrite(LED_PIN, buttonState);
+  digitalWrite(BUTTON_LED_PIN, HIGH);
 }
 
 void loop() {
-  if (digitalRead(BUTTON_PIN) == HIGH) {
-    if (lastButtonState == LOW) {
-      lastButtonState = HIGH;
-      buttonPress();
-    } 
-  } else {
-    lastButtonState = LOW;
-  }
-  
-  digitalWrite(LED_PIN, leftPanelOutput);
+  checkButtonState();
 }
 
-void buttonPress() {
-  if ((millis() - leftLastChange) > 100)
+void checkButtonState() {
+    buttonState = digitalRead(BUTTON_PIN);
+  
+  if (buttonState != lastButtonState) {
+    lastStateChange = millis();
+    lastButtonState = buttonState;
+  }
+  deltaSinceLastChange = millis() - lastStateChange;
+  
+  if (buttonState == HIGH && 
+      deltaSinceLastChange > PRESS_DELAY)
   {
-    leftPanelOutput = !leftPanelOutput;
-    leftLastChange = millis();
+    if (freshButtonPress) {
+      buttonPressed();
+    } else {
+      buttonDown();
+    }
+  }
+
+  if (buttonState == LOW &&
+      deltaSinceLastChange > PRESS_DELAY)
+  {
+    buttonReleased();
   }
 }
+
+void buttonPressed() {
+  toggleLights();
+  // While the button is down, it is not considered a fresh press
+  freshButtonPress = false;
+  digitalWrite(BUTTON_LED_PIN, LOW);
+}
+
+void buttonDown() {
+  
+}
+
+void buttonReleased() {
+  freshButtonPress = true;
+  digitalWrite(BUTTON_LED_PIN, HIGH);
+}
+
+void toggleLights() {
+  panelOutput = !panelOutput;
+  digitalWrite(LED_PIN, panelOutput);
+}
+
