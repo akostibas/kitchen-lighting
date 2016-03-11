@@ -17,9 +17,10 @@ bool freshButtonRelease;
 
 void setup() {
   lastStateChange = millis();
-  
+
   pinMode(BUTTON_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_LED_PIN, OUTPUT);
   
   buttonState = digitalRead(BUTTON_PIN);
   lastButtonState = buttonState;
