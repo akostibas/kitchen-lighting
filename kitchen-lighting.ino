@@ -13,6 +13,7 @@ long lastStateChange;
 long deltaSinceLastChange;
 int buttonLedMode = 0;
 bool freshButtonPress = true;
+bool freshButtonRelease;
 
 void setup() {
   lastStateChange = millis();
@@ -51,6 +52,7 @@ void checkButtonState() {
   }
 
   if (buttonState == LOW &&
+      freshButtonRelease &&
       deltaSinceLastChange > PRESS_DELAY)
   {
     buttonReleased();
@@ -61,6 +63,7 @@ void buttonPressed() {
   toggleLights();
   // While the button is down, it is not considered a fresh press
   freshButtonPress = false;
+  freshButtonRelease = true;
   digitalWrite(BUTTON_LED_PIN, LOW);
 }
 
@@ -70,6 +73,7 @@ void buttonDown() {
 
 void buttonReleased() {
   freshButtonPress = true;
+  freshButtonRelease = false;
   digitalWrite(BUTTON_LED_PIN, HIGH);
 }
 
