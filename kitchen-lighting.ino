@@ -38,6 +38,7 @@ void setup() {
 
 void loop() {
   checkButtonState();
+  toggleButtonLed(800);
 }
 
 void checkButtonState() {
@@ -48,22 +49,22 @@ void checkButtonState() {
     lastButtonState = buttonState;
   }
   deltaSinceLastChange = millis() - lastStateChange;
-  
-  if (buttonState == HIGH && 
-      deltaSinceLastChange > PRESS_DELAY)
-  {
-    if (freshButtonPress) {
-      buttonPressed();
-    } else {
-      buttonDown();
-    }
-  }
 
-  if (buttonState == LOW &&
-      freshButtonRelease &&
-      deltaSinceLastChange > PRESS_DELAY)
-  {
-    buttonReleased();
+  if (deltaSinceLastChange > PRESS_DELAY) {
+    // We only take actions if the last change was some time ago
+    // this smooths out random bounces in input signal from the
+    // button mechanism.
+    if (buttonState == HIGH)
+    {
+      if (freshButtonPress) {
+        buttonPressed();
+      } else {
+        buttonDown();
+      }
+    } else if (buttonState == LOW && freshButtonRelease)
+    {
+      buttonReleased();
+    }
   }
 }
 
@@ -83,7 +84,7 @@ void buttonDown() {
   }
 
   // Do a 50% dim.. button #2 isn't PWM.
-  toggleButtonLed();
+  toggleButtonLed(5000);
 }
 
 void buttonReleased() {
@@ -98,13 +99,18 @@ void toggleLights() {
   digitalWrite(LED_PIN, panelOutput);
 }
 
-void toggleButtonLed() {
+// amount is the number of additional ms to leave the button LED
+// disabled. The 
+void toggleButtonLed(int amount) {
   if (buttonLedEnabled) {
     buttonLedOutput = !buttonLedOutput;
   } else {
     buttonLedOutput = LOW;
   }
   digitalWrite(BUTTON_LED_PIN, buttonLedOutput);
+  if (!buttonLedOutput) {
+    delayMicroseconds(amount);
+  }
 }
 
 void setButtonLed(bool desiredState) {
@@ -115,4 +121,3 @@ void setButtonLed(bool desiredState) {
   }
   digitalWrite(BUTTON_LED_PIN, buttonLedOutput);
 }
-
