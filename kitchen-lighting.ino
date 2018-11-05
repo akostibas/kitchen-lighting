@@ -1,123 +1,165 @@
-const int BUTTON_PIN = 0;
-const int BUTTON_LED_PIN = 2;
+const int BUTTON_LED_PIN = 0;
 const int LED_PIN = 1;
+const int BUTTON_PIN = 2;
+
+enum lightModes{low, medium, high};
+
 // Delay to ignore input between button state changes
 const int PRESS_DELAY = 20;
 
-bool panelOutput = LOW;
-int panelMode = 0;
+// LED panel variables
+enum lightModes panelMode = high;
+bool freshModeChange = true;
+bool panelEnabled = false;
+int panelFancyDelay = 2500;
 
 // Button LED variables
+const int BUTTON_LED_HIGH = 155;
+const int BUTTON_LED_LOW = 70;
 bool buttonLedOutput = HIGH;
 bool buttonLedEnabled = true;
+
+// Number of millis needed to hold button down to disable button LEDs
 int buttonLedDisableDelay = 1250;
 bool freshButtonLedChange = true;
 
 bool buttonState = LOW;
 bool lastButtonState = LOW;
-long lastStateChange;
-long deltaSinceLastChange;
-int buttonLedMode = 0;
+// The time of the last state change
+long millisOfLastChange;
+// The number of millis since the last state change
+long millisSinceLastChange;
+
+// Was the button freshly pressed (or is it being held down)?
 bool freshButtonPress = true;
-bool freshButtonRelease;
+// Was the button freshly pressed (or has it always been up)?
+bool freshButtonRelease = true;
 
 void setup() {
-  lastStateChange = millis();
+  millisOfLastChange = millis();
   freshButtonLedChange = true;
 
   pinMode(BUTTON_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUTTON_LED_PIN, OUTPUT);
-  
+
   buttonState = digitalRead(BUTTON_PIN);
   lastButtonState = buttonState;
 
-  digitalWrite(LED_PIN, buttonState);
-  digitalWrite(BUTTON_LED_PIN, HIGH);
+  digitalWrite(LED_PIN, LOW);
+  analogWrite(BUTTON_LED_PIN, BUTTON_LED_HIGH);
 }
 
 void loop() {
   checkButtonState();
-  toggleButtonLed(800);
+  setButtonLed();
+  setPanel();
+}
+
+// Adjust light panel to appropriate output
+void setPanel() {
+  if (panelEnabled) {
+    switch(panelMode) {
+      case high:
+        analogWrite(LED_PIN, 255);
+        break;
+      case medium:
+        analogWrite(LED_PIN, 100);
+        break;
+      case low:
+        analogWrite(LED_PIN, 60);
+        break;
+    }
+  } else {
+    digitalWrite(LED_PIN, 0);
+  }
+}
+
+// Adjust button LED to appropriate output
+void setButtonLed() {
+  if (buttonLedEnabled) {
+    if (buttonState == HIGH) {
+      analogWrite(BUTTON_LED_PIN, BUTTON_LED_LOW);
+    } else {
+      analogWrite(BUTTON_LED_PIN, BUTTON_LED_HIGH);
+    }
+  } else {
+    analogWrite(BUTTON_LED_PIN, 0);
+  }
 }
 
 void checkButtonState() {
-    buttonState = digitalRead(BUTTON_PIN);
-  
+  buttonState = digitalRead(BUTTON_PIN);
+
   if (buttonState != lastButtonState) {
-    lastStateChange = millis();
+    millisOfLastChange = millis();
     lastButtonState = buttonState;
   }
-  deltaSinceLastChange = millis() - lastStateChange;
+  millisSinceLastChange = millis() - millisOfLastChange;
 
-  if (deltaSinceLastChange > PRESS_DELAY) {
+  if (millisSinceLastChange > PRESS_DELAY) {
     // We only take actions if the last change was some time ago
     // this smooths out random bounces in input signal from the
     // button mechanism.
     if (buttonState == HIGH)
     {
       if (freshButtonPress) {
-        buttonPressed();
-      } else {
         buttonDown();
+      } else {
+        buttonHold();
       }
     } else if (buttonState == LOW && freshButtonRelease)
     {
-      buttonReleased();
+      buttonUp();
     }
   }
 }
 
-void buttonPressed() {
+// The button was just pressed down
+void buttonDown() {
   toggleLights();
-  // While the button is down, it is not considered a fresh press
   freshButtonPress = false;
   freshButtonRelease = true;
 }
 
-void buttonDown() {
+// The button is being held down
+void buttonHold() {
   // Check to see if we're disabling the button led
-  if (deltaSinceLastChange > buttonLedDisableDelay &&
+  if (millisSinceLastChange > buttonLedDisableDelay &&
       freshButtonLedChange) {
     buttonLedEnabled = !buttonLedEnabled;
     freshButtonLedChange = false;
   }
 
-  // Do a 50% dim.. button #2 isn't PWM.
-  toggleButtonLed(5000);
+  if (millisSinceLastChange > panelFancyDelay &&
+      freshModeChange) {
+    freshModeChange = false;
+    toggleLightMode();
+  }
 }
 
-void buttonReleased() {
+// The button was released
+void buttonUp() {
   freshButtonPress = true;
   freshButtonRelease = false;
   freshButtonLedChange = true;
-  setButtonLed(HIGH);
+  freshModeChange = true;
 }
 
 void toggleLights() {
-  panelOutput = !panelOutput;
-  digitalWrite(LED_PIN, panelOutput);
+  panelEnabled = !panelEnabled;
 }
 
-// amount is the number of additional ms to leave the button LED
-// disabled. The 
-void toggleButtonLed(int amount) {
-  if (buttonLedEnabled) {
-    buttonLedOutput = !buttonLedOutput;
-  } else {
-    buttonLedOutput = LOW;
+void toggleLightMode() {
+  switch(panelMode) {
+    case high:
+      panelMode = medium;
+      break;
+    case medium:
+      panelMode = low;
+      break;
+    case low:
+      panelMode = high;
+      break;
   }
-  digitalWrite(BUTTON_LED_PIN, buttonLedOutput);
-  if (!buttonLedOutput) {
-    delayMicroseconds(amount);
-  }
-}
-
-void setButtonLed(bool desiredState) {
-  if (buttonLedEnabled) {
-    buttonLedOutput = desiredState;
-  } else {
-    buttonLedOutput = LOW;
-  }
-  digitalWrite(BUTTON_LED_PIN, buttonLedOutput);
 }
