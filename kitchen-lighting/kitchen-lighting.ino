@@ -62,17 +62,17 @@ void setPanel() {
       break;
     
     case medium:
-      if (panelCurrentOutput < 150) {
+      if (panelCurrentOutput < 120) {
         panelCurrentOutput++;
-      } else if (panelCurrentOutput > 150) {
+      } else if (panelCurrentOutput > 120) {
         panelCurrentOutput--;
       }
       break;
     
     case low:
-      if (panelCurrentOutput < 60) {
+      if (panelCurrentOutput < 30) {
         panelCurrentOutput++;
-      } else if (panelCurrentOutput > 60) {
+      } else if (panelCurrentOutput > 30) {
         panelCurrentOutput--;
       }
       break;
@@ -153,7 +153,8 @@ void buttonUp() {
   // Don't toggle the lights if we've just changed the button LED
   if (freshButtonLedChange) {
     // Detect a rapid push vs a normal push
-    if (millis() - millisSinceLastPush < RAPID_PUSH_DELAY) {
+    if (millis() - millisSinceLastPush < RAPID_PUSH_DELAY &&
+        panelMode != off) {
       toggleLightMode();
     } else {
       togglePanel();
