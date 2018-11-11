@@ -24,8 +24,8 @@ int panelCurrentOutput = 0;
 bool panelEnabled = false;
 
 // Button LED variables
-const int BUTTON_LED_HIGH = 200;
-const int BUTTON_LED_LOW = 10;
+const int BUTTON_LED_HIGH = 255;
+const int BUTTON_LED_LOW = 200;
 bool buttonLedOutput = HIGH;
 bool buttonLedEnabled = true;
 const int BUTTON_LED_DISPLAY_DELAY = 1250;
